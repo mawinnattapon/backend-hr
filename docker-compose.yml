@@ -14,6 +14,45 @@ services:
       - mysql_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     restart: always
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    
+  # ใช้ nginx เป็น load balancer
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - api
+
+  api:
+    build: .
+    # ไม่ต้องเปิด port ออกมาภายนอก ให้ nginx เป็นตัวจัดการ
+    # ports:
+    #   - "5000-5010:3001"
+    depends_on:
+      - mysql
+    environment:
+      - PORT=3001
+      - DATABASE_HOST=mysql
+      - DATABASE_PORT=3306
+      - DATABASE_USERNAME=hruser
+      - DATABASE_PASSWORD=hrpassword
+      - DATABASE_NAME=hr
+      - DATABASE_SYNCHRONIZE=true
+      - DATABASE_LOGGING=true
+    restart: always
+    # รอให้ MySQL พร้อมใช้งานก่อน
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   mysql_data:
