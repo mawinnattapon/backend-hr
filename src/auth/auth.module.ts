@@ -17,7 +17,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,
-      signOptions: { expiresIn: '15m' },
+      signOptions: { expiresIn: '1m' },
     }),
   ],
   controllers: [AuthController],
