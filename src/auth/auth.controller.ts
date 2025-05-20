@@ -1,4 +1,5 @@
-import { Controller, Request, Post, UseGuards, Get, Body } from '@nestjs/common';
+import { Controller, Request, Post, UseGuards, Get, Body, Res, UnauthorizedException } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -7,6 +8,11 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 interface LoginDto {
   username: string;
   password: string;
+}
+
+// เพิ่ม interface สำหรับรับ refresh token
+interface RefreshTokenDto {
+  refresh_token: string;
 }
 
 @Controller('auth')
@@ -25,7 +31,35 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Request() req) {
+  getProfile(@Request() req, @Res({ passthrough: true }) res: Response) {
+    // ตรวจสอบว่ามี token ใหม่ใน header หรือไม่
+    const newToken = res.getHeader('X-New-Access-Token');
+    if (newToken) {
+      // ถ้ามี token ใหม่ ให้ส่งกลับไปให้ client ด้วย
+      return {
+        ...req.user,
+        new_access_token: newToken
+      };
+    }
     return req.user;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('refresh')
+  async refreshTokenByToken(@Body() refreshTokenDto: RefreshTokenDto) {
+    try {
+      // เรียกใช้ refreshTokenByToken จาก AuthService
+      return await this.authService.refreshTokenByToken(refreshTokenDto.refresh_token);
+    } catch (error) {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
+  }
+  
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  async logout(@Request() req) {
+    // เรียกใช้ logout จาก AuthService
+    await this.authService.logout(req.user.userId);
+    return { message: 'Logout successful' };
   }
 }

@@ -36,12 +36,29 @@ export class UsersService {
   findByUsername(username: string) {
     return this.usersRepository.findOne({
       where: { username },
-      select: ['userId', 'username', 'email', 'firstName', 'lastName', 'password', 'isActive', 'createdBy']
+      select: ['userId', 'username', 'email', 'firstName', 'lastName', 'password', 'isActive', 'createdBy', 'refreshToken']
     });
+  }
+  
+  findById(id: number) {
+    return this.usersRepository.findOne({
+      where: { userId: id },
+      select: ['userId', 'username', 'email', 'firstName', 'lastName', 'isActive', 'refreshToken']
+    });
+  }
+  
+  async saveRefreshToken(userId: number, refreshToken: string) {
+    await this.usersRepository.update(userId, { refreshToken });
+    return true;
   }
 
   update(id: number, updateUserDto: UpdateUserDto) {
     return this.usersRepository.update(id, updateUserDto);
+  }
+  
+  async removeRefreshToken(userId: number) {
+    await this.usersRepository.update(userId, { refreshToken: '' });
+    return true;
   }
 
   remove(id: number) {

@@ -22,6 +22,9 @@ export class users {
 
   @Column({ default: true })
   isActive: boolean;
+  
+  @Column({ nullable: true, select: false })
+  refreshToken: string;
 
   // ข้อมูลส่วนตัว
   @Column({ length: 20, nullable: true })
